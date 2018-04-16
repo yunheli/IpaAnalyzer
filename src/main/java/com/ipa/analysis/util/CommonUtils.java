@@ -18,16 +18,19 @@ package com.ipa.analysis.util;
 
 import static org.apache.commons.io.IOUtils.toByteArray;
 
-import com.sun.tools.javac.util.Assert;
+import com.ipa.analysis.exception.AnalysisException;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.commons.io.IOUtils;
 
 /**
  * @author yh@fir.im
@@ -49,28 +52,47 @@ public class CommonUtils {
      * trans ipa icon to normal
      * @param input
      */
-    public static byte[] transIconToNormal(byte[] input) {
+    public static byte[] transIconToNormal(byte[] input) throws AnalysisException {
 
         String[] commands;
 
+        // create temp folder to operate
         createTmpFolders();
 
         Path origin = dumpToFile(input);
-        Assert.checkNonNull(origin, "input file ");
+        assertNull(origin, "origin is null");
 
         Path dest = Paths.get(origin.getParent().toString(),
             origin.toFile().getName().split(ICON_SUFFIX)[0] + NORMAL_SUFFIX + ICON_SUFFIX);
-        Assert.checkNonNull(dest, "out folder ");
+        assertNull(dest, "dest is null");
+
+        Path pngdefry = saveExecutedJarToTmp(CommonUtils.class.getClassLoader().getResourceAsStream(PNG_DEFRY));
+        assertNull(pngdefry, "pngdefry is null");
+
+        // set file to can executable
+        pngdefry.toFile().setExecutable(true);
 
         commands = new String[]{
-            CommonUtils.class.getClassLoader().getResource(PNG_DEFRY).getPath(),
+            pngdefry.toString(),
             "-s" + NORMAL_SUFFIX,
             "-o" + dest.getParent(),
             origin.toString()
         };
-
         String cmd = String.join(" ", commands);
 
+        execute(cmd);
+
+        try {
+            return toByteArray(new FileInputStream(dest.toFile()));
+        } catch (IOException e) {
+            throw new AnalysisException(" Trans to normal icon exception " + e.getMessage());
+        } finally {
+            deleteFiles(origin);
+            deleteFiles(dest);
+        }
+    }
+
+    private static void execute(String cmd) {
         Runtime rt = Runtime.getRuntime();
         try {
             Process ps = rt.exec(cmd);
@@ -81,18 +103,27 @@ public class CommonUtils {
                 LOGGER.info(line);
             }
 
-            Assert.check(dest.toFile().exists(), " dist is not found ");
-
-            return toByteArray(new FileInputStream(dest.toFile()));
-
-        } catch (IOException e) {
+        } catch (Throwable e) {
             LOGGER.severe(" Trans image format exception " + e.getMessage());
-        } finally {
-            deleteFiles(origin);
-            deleteFiles(dest);
+            throw new AnalysisException("execute cmd exception " + e.getMessage());
         }
+    }
 
-        return input;
+    private static void assertNull(Object flag, String message) {
+        if (Objects.isNull(flag)) {
+            throw new AnalysisException(message + "is null");
+        }
+    }
+
+    private static Path saveExecutedJarToTmp(InputStream inputStream) {
+        Path dest = Paths.get(TMP_FOLDER.toString(), PNG_DEFRY);
+
+        try {
+            Files.write(dest, IOUtils.toByteArray(inputStream));
+        } catch (IOException e) {
+            return null;
+        }
+        return dest;
     }
 
     private static void createTmpFolders() {

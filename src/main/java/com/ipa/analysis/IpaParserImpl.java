@@ -128,7 +128,10 @@ public class IpaParserImpl implements IpaParser {
             }
 
             // tran icon to normal show
-            inputStream = CommonUtils.transIconToNormal(inputStream);
+            try {
+                inputStream = CommonUtils.transIconToNormal(inputStream);
+            } catch (Throwable e) {
+            }
         }
         return inputStream;
     }
