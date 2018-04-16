@@ -21,6 +21,7 @@ import com.dd.plist.NSDictionary;
 import com.dd.plist.NSObject;
 import com.dd.plist.PropertyListParser;
 import com.ipa.analysis.domain.IpaInfo;
+import com.ipa.analysis.util.CommonUtils;
 import com.ipa.analysis.util.IpaUtil;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -125,6 +126,9 @@ public class IpaParserImpl implements IpaParser {
                     }
                 }
             }
+
+            // tran icon to normal show
+            inputStream = CommonUtils.transIconToNormal(inputStream);
         }
         return inputStream;
     }

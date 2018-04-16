@@ -16,9 +16,7 @@
 
 package com.ipa.analysis;
 
-import java.io.File;
 import com.ipa.analysis.domain.IpaInfo;
-import java.io.InputStream;
 import java.util.List;
 
 /**
